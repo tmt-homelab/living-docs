@@ -14,6 +14,10 @@ on:
     types: [sync-docs]
   workflow_dispatch: # Allow manual trigger via GitHub UI
 
+permissions:
+  contents: write  # Need write access to push commits
+  pull-requests: write  # Need write access for PRs if needed
+
 jobs:
   sync-and-deploy:
     name: Sync and Deploy Documentation
