@@ -1,0 +1,39 @@
+name: Sync Documentation
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours
+  repository_dispatch:
+    types: [sync-docs]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: [self-hosted, dockp04]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: pip install httpx
+        
+      - name: Run Sync
+        env:
+          CORVUS_API_KEY: ${{ secrets.CORVUS_API_KEY }}
+        run: python scripts/fetch_and_sync.py
+        
+      - name: Commit and Push changes
+        run: |
+          git config user.name "Claude Sync Bot"
+          git config user.email "claude-sync-bot@tmt-homelab.local"
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: automated sync from Corvus [skip ci]"
+            git push origin main
+          fi
