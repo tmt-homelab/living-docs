@@ -16,8 +16,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   sync:
@@ -73,11 +71,54 @@ jobs:
         run: |
           mkdocs build --strict --site-dir _site
         
-      - name: Upload MkDocs artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to dockp04
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          path: _site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          host: dockp04
+          username: ${{ secrets.DOCKP04_USER }}
+          key: ${{ secrets.DOCKP04_SSH_KEY }}
+          script: |
+            # Create site directory if it doesn't exist
+            mkdir -p /mnt/docker/stacks/docs/site
+            
+            # Sync built site (using rsync for efficiency)
+            # Note: GitHub Actions workspace is at $HOME/work/living-docs/living-docs
+            rsync -av --delete $HOME/work/living-docs/living-docs/_site/ /mnt/docker/stacks/docs/site/
+            
+            # Restart container to pick up new content
+            cd /mnt/docker/stacks/docs
+            docker compose restart docs
+            
+            # Clean up old site files (optional, keep last 5 versions)
+            # find /mnt/docker/stacks/docs/site -type f -mtime +30 -delete
+        
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: dockp04
+          username: ${{ secrets.DOCKP04_USER }}
+          key: ${{ secrets.DOCKP04_SSH_KEY }}
+          script: |
+            # Wait for container to be healthy
+            sleep 5
+            
+            # Check if site files exist
+            if [ -f /mnt/docker/stacks/docs/site/index.html ]; then
+              echo "✅ Site files deployed successfully"
+              echo "File count: $(find /mnt/docker/stacks/docs/site -type f | wc -l)"
+              echo "Latest index.html: $(stat -c %y /mnt/docker/stacks/docs/site/index.html 2>/dev/null || stat -f %Sm /mnt/docker/stacks/docs/site/index.html)"
+            else
+              echo "❌ Site files not found"
+              exit 1
+            fi
+            
+            # Check container health
+            cd /mnt/docker/stacks/docs
+            docker compose ps docs
+            
+            # Test local connectivity (Caddy proxy test)
+            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/ | grep -q "200"; then
+              echo "✅ Docs container responding on localhost:8000"
+            else
+              echo "⚠️  Container may not be responding yet (check logs)"
+            fi
