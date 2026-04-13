@@ -62,18 +62,19 @@ graph TB
         p2[Ubuntu 24.04<br/>125GB RAM<br/>3 GPUs<br/>2TB NVMe]
     end
 
+    subgraph "dockp03 - AI Compute 3"
+        p3[Ubuntu 24.04<br/>A5000 GPU<br/>AI Inference & Audio]
+    end
+
     subgraph "dockp04 - Infrastructure"
         p4[Ubuntu 24.04<br/>128GB RAM<br/>No GPUs<br/>523TB ZFS]
     end
 
-    subgraph "tmtaip01 - Edge AI"
-        p3[Jetson Orin AGX<br/>64GB Unified<br/>1TB NVMe]
-    end
-
     p4 -->|DNS, Auth, Storage| p1
     p4 -->|DNS, Auth, Storage| p2
-    p1 -->|AI Inference| p3
-    p2 -->|AI Inference| p3
+    p4 -->|DNS, Auth, Storage| p3
+    p1 -->|Inference Traffic| p3
+    p2 -->|Inference Traffic| p3
 ```
 
 ### Key Services
@@ -148,8 +149,8 @@ graph TB
 
 ## Quick Links
 
-- [GitHub Repository](https://github.com/tmttodd/homelab-docs)
-- [Infrastructure GitOps](https://github.com/tmttodd/homelab-gitops)
+- [GitHub Repository](https://github.com/tmt-homelab/living-docs)
+- [Infrastructure GitOps](https://github.com/tmt-homelab/homelab-gitops)
 - [Service Status Dashboard](https://uptime.themillertribe-int.org)
 - [Internal Wiki](https://docs.themillertribe-int.org)
 
