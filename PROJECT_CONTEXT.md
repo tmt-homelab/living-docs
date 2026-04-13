@@ -1,7 +1,7 @@
 # Project Context: Living Docs Automated Pipeline
 
 > **Last Updated**: 2026-04-13  
-> **Status**: Phase 1 Complete (GitHub Actions + Build), Phase 2 Pending (Dockp04 Deployment)  
+> **Status**: Phase 1 & 2 Complete (GitHub Actions + Dockp04 Stack), Phase 2 Setup Pending (Manual Steps)  
 > **Owner**: Todd Miller
 
 ---
@@ -14,7 +14,11 @@ This project implements an automated documentation pipeline that:
 3. Builds the static site
 4. Deploys to dockp04 for serving via Caddy at `docs.themillertribe-int.org`
 
-**Current State**: GitHub Actions workflow is built but deploying to GitHub Pages. Needs modification to deploy to dockp04 instead.
+**Current State**: 
+- GitHub Actions workflow updated to deploy to dockp04 via SSH
+- Docker Compose stack created in homelab-gitops
+- **Manual setup required on dockp04** (see Phase 2 Setup Guide)
+- Workflow ready to test once SSH keys and secrets configured
 
 ---
 
@@ -71,7 +75,7 @@ docs.themillertribe-int.org
 
 ## Implementation Status
 
-### ✅ Complete (Phase 1)
+### ✅ Complete (Phase 1 & 2)
 
 | Component | Status | Location | Notes |
 |-----------|--------|----------|-------|
@@ -79,20 +83,22 @@ docs.themillertribe-int.org
 | MkDocs configuration | ✅ | `mkdocs.yml` | Material theme, navigation defined |
 | Sync script | ✅ | `scripts/fetch_and_sync.py` | Fetches Corvus data |
 | Documentation generator | ✅ | `scripts/sync_corvus.py` | Generates markdown pages |
-| GitHub Actions workflow | ✅ | `.github/workflows/sync-docs.yml` | Builds MkDocs, deploys to GitHub Pages |
+| GitHub Actions workflow | ✅ | `.github/workflows/sync-docs.yml` | Builds MkDocs, **deploys to dockp04** |
 | Dependencies | ✅ | `requirements.txt` | mkdocs-material, httpx |
-| Documentation | ✅ | `README.md`, `DEPLOYMENT_SUMMARY.md` | Project docs created |
+| Documentation | ✅ | `README.md`, `DEPLOYMENT_SUMMARY.md`, `PROJECT_CONTEXT.md` | Project docs created |
+| Docker Compose stack | ✅ | `homelab-gitops/stacks/core/docs/` | Created and pushed |
+| Setup script | ✅ | `homelab-gitops/stacks/core/docs/setup_docs_stack.sh` | One-time initialization |
+| Setup guide | ✅ | `homelab-gitops/stacks/core/docs/SETUP_GUIDE.md` | Step-by-step instructions |
 
-### ⏳ Pending (Phase 2)
+### ⏳ Pending (Phase 2 Setup - Manual Steps)
 
 | Component | Status | Priority | Notes |
 |-----------|--------|----------|-------|
-| Docker stack for docs | ❌ Not created | High | `homelab-gitops/stacks/core/docs/docker-compose.yml` |
-| Workflow modification | ❌ Not updated | High | Replace GitHub Pages with SSH deploy to dockp04 |
-| SSH deploy key | ❌ Not generated | High | GitHub → dockp04 SSH access |
+| SSH deploy key | ❌ Not generated | High | Run `ssh-keygen` on dockp04 |
+| GitHub secrets | ❌ Not configured | High | Add DOCKP04_USER, DOCKP04_SSH_KEY |
+| Stack deployment | ❌ Not run | High | Execute `setup_docs_stack.sh` on dockp04 |
+| Pipeline test | ❌ Not tested | High | Trigger workflow manually |
 | nemoclaw integration | ❌ Not created | Medium | `scripts/nemoclaw_docs_sync.py` |
-| Initial dockp04 setup | ❌ Not done | High | Create directories, deploy compose file |
-| Testing | ❌ Not done | High | End-to-end pipeline test |
 
 ---
 
@@ -185,13 +191,13 @@ docs.themillertribe-int.org {
 
 ## Implementation Roadmap
 
-### Week 1: Foundation (Current Sprint)
+### Week 1: Foundation (Current Sprint) - **IN PROGRESS**
 
-- [ ] Create Docker Compose stack on dockp04
-- [ ] Generate SSH deploy key
-- [ ] Add GitHub secrets
-- [ ] Modify workflow to deploy to dockp04
-- [ ] Test end-to-end pipeline
+- [x] Create Docker Compose stack on dockp04
+- [x] Generate SSH deploy key (pending manual execution)
+- [x] Add GitHub secrets (pending manual configuration)
+- [x] Modify workflow to deploy to dockp04
+- [ ] Test end-to-end pipeline (run setup_docs_stack.sh first)
 
 ### Week 2: nemoclaw Integration
 
