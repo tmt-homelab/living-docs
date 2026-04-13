@@ -1,6 +1,6 @@
-name: Sync Documentation
+name: Sync and Deploy Documentation
 
-# Automated documentation sync from Corvus operational governance platform.
+# Automated documentation sync from Corvus with GitOps deployment.
 # 
 # Triggers:
 # - Scheduled: Every 6 hours (heartbeat sync)
@@ -14,12 +14,9 @@ on:
     types: [sync-docs]
   workflow_dispatch: # Allow manual trigger via GitHub UI
 
-permissions:
-  contents: read
-
 jobs:
-  sync:
-    name: Sync Documentation from Corvus
+  sync-and-deploy:
+    name: Sync and Deploy Documentation
     runs-on: [self-hosted, dockp04]
     
     steps:
@@ -44,81 +41,72 @@ jobs:
           CORVUS_API_KEY: ${{ secrets.CORVUS_API_KEY }}
         run: python scripts/fetch_and_sync.py
         
-      - name: Detect changes
-        id: changes
+      - name: Detect source changes
+        id: source_changes
         run: |
-          git config user.name "Claude Sync Bot"
-          git config user.email "claude-sync-bot@tmt-homelab.local"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
           git add .
           if git diff --staged --quiet; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "No documentation changes to commit"
+            echo "has_source_changes=false" >> $GITHUB_OUTPUT
+            echo "No documentation source changes"
           else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Documentation changes detected"
+            echo "has_source_changes=true" >> $GITHUB_OUTPUT
+            echo "Documentation source changes detected"
           fi
       
-      - name: Commit and push
-        if: steps.changes.outputs.has_changes == 'true'
+      - name: Commit source changes
+        if: steps.source_changes.outputs.has_source_changes == 'true'
         run: |
           git commit -m "docs: automated sync from Corvus [skip ci]"
           git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+        
       - name: Build MkDocs site
         if: always()
         run: |
           mkdocs build --strict --site-dir _site
-        
-      - name: Deploy to dockp04
-        uses: appleboy/ssh-action@v1.0.3
+          echo "Built site with $(find _site -type f | wc -l) files"
+      
+      - name: Checkout homelab-gitops
+        uses: actions/checkout@v4
         with:
-          host: dockp04
-          username: ${{ secrets.DOCKP04_USER }}
-          key: ${{ secrets.DOCKP04_SSH_KEY }}
-          script: |
-            # Create site directory if it doesn't exist
-            mkdir -p /mnt/docker/stacks/docs/site
-            
-            # Sync built site (using rsync for efficiency)
-            # Note: GitHub Actions workspace is at $HOME/work/living-docs/living-docs
-            rsync -av --delete $HOME/work/living-docs/living-docs/_site/ /mnt/docker/stacks/docs/site/
-            
-            # Restart container to pick up new content
-            cd /mnt/docker/stacks/docs
-            docker compose restart docs
-            
-            # Clean up old site files (optional, keep last 5 versions)
-            # find /mnt/docker/stacks/docs/site -type f -mtime +30 -delete
-        
-      - name: Verify deployment
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: dockp04
-          username: ${{ secrets.DOCKP04_USER }}
-          key: ${{ secrets.DOCKP04_SSH_KEY }}
-          script: |
-            # Wait for container to be healthy
-            sleep 5
-            
-            # Check if site files exist
-            if [ -f /mnt/docker/stacks/docs/site/index.html ]; then
-              echo "✅ Site files deployed successfully"
-              echo "File count: $(find /mnt/docker/stacks/docs/site -type f | wc -l)"
-              echo "Latest index.html: $(stat -c %y /mnt/docker/stacks/docs/site/index.html 2>/dev/null || stat -f %Sm /mnt/docker/stacks/docs/site/index.html)"
-            else
-              echo "❌ Site files not found"
-              exit 1
-            fi
-            
-            # Check container health
-            cd /mnt/docker/stacks/docs
-            docker compose ps docs
-            
-            # Test local connectivity (Caddy proxy test)
-            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/ | grep -q "200"; then
-              echo "✅ Docs container responding on localhost:8000"
-            else
-              echo "⚠️  Container may not be responding yet (check logs)"
-            fi
+          repository: tmttodd/homelab-gitops
+          path: homelab-gitops
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 1
+      
+      - name: Deploy site to homelab-gitops
+        id: deploy
+        run: |
+          # Sync built site to homelab-gitops
+          rsync -av --delete _site/ homelab-gitops/stacks/core/docs/site/
+          
+          # Check if there are changes
+          cd homelab-gitops
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add stacks/core/docs/site/
+          
+          if git diff --staged --quiet; then
+            echo "No site changes to commit"
+            echo "has_site_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Site changes detected, committing..."
+            git commit -m "deploy: update living-docs site [skip ci]"
+            git push origin main
+            echo "has_site_changes=true" >> $GITHUB_OUTPUT
+            echo "✅ Site deployed to homelab-gitops"
+          fi
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+      
+      - name: Summary
+        run: |
+          echo "=== Deployment Summary ==="
+          echo "Source changes: ${{ steps.source_changes.outputs.has_source_changes }}"
+          echo "Site changes: ${{ steps.deploy.outputs.has_site_changes }}"
+          echo ""
+          echo "Next: dockp04 will auto-sync via git pull (watchtower or cron)"
+          echo "URL: https://docs.themillertribe-int.org"
