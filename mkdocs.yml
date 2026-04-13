@@ -1,0 +1,36 @@
+site_name: TMT Homelab Documentation
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting Started: 
+    - Overview: getting-started/overview.md
+    - Family Guide: getting-started/family-guide.md
+    - Emergency Contacts: getting-started/emergency-contacts.md
+  - Governance:
+    - Secrets Management: governance/secrets-management.md
+    - Access Control: governance/access-control.md
+    - Network Security: governance/network-security.md
+  - Infrastructure:
+    - Hosts: infrastructure/hosts/index.md
+    - Network Map: infrastructure/network-map/index.md
+  - Services:
+    - Overview: services/overview.md
+  - Operations:
+    - Runbooks: operations/runbooks/overview.md
+  - Disaster Recovery:
+    - Procedures: disaster-recovery/recovery-procedures/index.md
+    - Post-Mortems: disaster-recovery/post-mortems/index.md
+  - Operational State:
+    - Live Status: operational-state/index.md
+  - Glossary: glossary.md
