@@ -24,52 +24,35 @@ This project implements an automated documentation pipeline that:
 
 ## Architecture
 
-### Current (As-Is)
+### Target (GitOps Pattern 2: Git-to-Git)
 ```
+┌─────────────────────────────────────────────────────────────┐
+│  living-docs repo (github.com/tmt-homelab/living-docs)     │
+│  - MkDocs source files                                       │
+│  - GitHub Actions: Build → Push to homelab-gitops           │
+└─────────────────────────────────────────────────────────────┘
+                              ↓ (git push)
+┌─────────────────────────────────────────────────────────────┐
+│  homelab-gitops repo (github.com/tmttodd/homelab-gitops)   │
+│  - stacks/core/docs/site/  ← Auto-committed built site      │
+│  - stacks/core/docs/       ← Docker Compose config          │
+└─────────────────────────────────────────────────────────────┘
+                              ↓ (git pull + restart)
 ┌─────────────────────────────────────────────────────────────┐
 │  dockp04                                                     │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  MkDocs (dev mode) - python -m mkdocs serve :8000   │    │
-│  └─────────────────────────────────────────────────────┘    │
-│         ↑                                                    │
-│         │ Manual updates (git pull, manual rebuild)          │
-│  ┌──────┴──────────────────────────────────────────────┐    │
-│  │  Git repo: ~/Documents/Claude/repos/homelab-docs/   │    │
-│  └─────────────────────────────────────────────────────┘    │
+│  - gitops-sync.sh (cron/watcher)                            │
+│  - docker compose up -d                                     │
+│  - Caddy proxy → docs.themillertribe-int.org                │
 └─────────────────────────────────────────────────────────────┘
-         ↑
-         │ Caddy proxy (from homelab-gitops Caddyfile)
-         │
-docs.themillertribe-int.org
 ```
 
-### Target (To-Be)
-```
-┌─────────────────────────────────────────────────────────────┐
-│  GitHub Actions (self-hosted runner on dockp04)             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  1. Fetch Corvus data                               │    │
-│  │  2. Generate docs via sync_corvus.py                │    │
-│  │  3. Build MkDocs (mkdocs build)                     │    │
-│  │  4. Deploy via SSH/rsync to dockp04                 │    │
-│  │  5. Trigger nemoclaw validation                     │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│  dockp04 (/mnt/docker/stacks/docs)                          │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  docker-compose.yml                                 │    │
-│  │  /site/  ← auto-updated built site                  │    │
-│  │  /source/  ← git repo (read-only)                   │    │
-│  │  mkdocs-material container (prod mode)              │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-         ↑
-         │ Caddy proxy (no changes needed)
-         │
-docs.themillertribe-int.org
-```
+### GitOps Principles
+- ✅ All state in Git (no manual SSH, no imperative deployment)
+- ✅ Declarative configuration (docker-compose.yml)
+- ✅ Secrets via 1Password Connect (not GitHub Secrets)
+- ✅ Reconciliation via git pull + docker compose
+- ✅ Audit trail in both repos
+- ✅ Rollback via git revert
 
 ---
 
@@ -86,49 +69,55 @@ docs.themillertribe-int.org
 | GitHub Actions workflow | ✅ | `.github/workflows/sync-docs.yml` | Builds MkDocs, **deploys to dockp04** |
 | Dependencies | ✅ | `requirements.txt` | mkdocs-material, httpx |
 | Documentation | ✅ | `README.md`, `DEPLOYMENT_SUMMARY.md`, `PROJECT_CONTEXT.md` | Project docs created |
-| Docker Compose stack | ✅ | `homelab-gitops/stacks/core/docs/` | Created and pushed |
-| Setup script | ✅ | `homelab-gitops/stacks/core/docs/setup_docs_stack.sh` | One-time initialization |
-| Setup guide | ✅ | `homelab-gitops/stacks/core/docs/SETUP_GUIDE.md` | Step-by-step instructions |
+| Docker Compose stack | ✅ | `homelab-gitops/stacks/core/docs/` | GitOps-managed |
+| GitOps sync script | ✅ | `homelab-gitops/stacks/core/docs/gitops-sync.sh` | Reconciliation loop |
+| GitOps README | ✅ | `homelab-gitops/stacks/core/docs/README.md` | Architecture docs |
 
-### ⏳ Pending (Phase 2 Setup - Manual Steps)
+### ⏳ Pending (Manual Setup)
 
 | Component | Status | Priority | Notes |
 |-----------|--------|----------|-------|
-| SSH deploy key | ❌ Not generated | High | Run `ssh-keygen` on dockp04 |
-| GitHub secrets | ❌ Not configured | High | Add DOCKP04_USER, DOCKP04_SSH_KEY |
-| Stack deployment | ❌ Not run | High | Execute `setup_docs_stack.sh` on dockp04 |
+| Stack deployment | ❌ Not run | High | Copy files to /mnt/docker/stacks/docs on dockp04 |
+| GH_PAT secret | ❌ Not configured | High | Create PAT with repo scope |
+| Container start | ❌ Not started | High | docker compose up -d |
 | Pipeline test | ❌ Not tested | High | Trigger workflow manually |
-| nemoclaw integration | ❌ Not created | Medium | `scripts/nemoclaw_docs_sync.py` |
+| Cron sync | ⏳ Optional | Low | Set up gitops-sync.sh cron job |
 
 ---
 
 ## Configuration Requirements
 
-### GitHub Secrets (Required)
+### GitHub Secrets (Required for Deployment)
 
 | Secret Name | Value | Purpose |
 |-------------|-------|---------|
-| `CORVUS_API_KEY` | [Corvus API token] | Authenticate to Corvus API |
-| `DOCKP04_USER` | `tmiller` (or similar) | SSH username for dockp04 |
-| `DOCKP04_SSH_KEY` | [Private SSH key] | SSH authentication to dockp04 |
-| `NEMOCLOW_URL` | `http://localhost:8100` (or internal URL) | nemoclaw endpoint |
-| `NEMOCLOW_API_KEY` | [nemoclaw API token] | Authenticate to nemoclaw |
+| `CORVUS_API_KEY` | [Corvus API token] | Authenticate to Corvus API (runtime) |
+| `GH_PAT` | [Personal Access Token] | Cross-repo deployment (living-docs → homelab-gitops) |
 
-### dockp04 Setup (Required)
+**Note**: Runtime secrets (CORVUS_API_KEY) are injected via **1Password Connect** on dockp04, not GitHub Secrets. GitHub Secrets are only used for deployment authentication.
+
+### dockp04 Setup (One-Time)
 
 ```bash
-# Create directory structure
-sudo mkdir -p /mnt/docker/stacks/docs/{source,site}
+# Create stack directory
+sudo mkdir -p /mnt/docker/stacks/docs/site
 sudo chown -R $USER:$USER /mnt/docker/stacks/docs
 
-# Generate SSH deploy key (if not existing)
-ssh-keygen -t ed25519 -C "github-actions@living-docs" -f ~/.ssh/github-actions-deploy
+# Clone homelab-gitops and copy stack files
+cd /mnt/docker/stacks/docs
+git clone git@github.com:tmttodd/homelab-gitops.git temp-repo
+cp temp-repo/stacks/core/docs/* .
+rm -rf temp-repo
 
-# Add public key to dockp04 authorized_keys
-cat ~/.ssh/github-actions-deploy.pub | sudo tee -a /home/tmiller/.ssh/authorized_keys
+# Create initial placeholder
+echo "Initializing..." > site/index.html
 
-# Restrict key permissions
-sudo chmod 600 /home/tmiller/.ssh/authorized_keys
+# Start container
+docker compose up -d
+
+# Optional: Set up cron for auto-sync
+crontab -e
+# Add: */5 * * * * /mnt/docker/stacks/docs/gitops-sync.sh >> /var/log/gitops-sync.log 2>&1
 ```
 
 ### Caddy Configuration (No Changes Needed)
