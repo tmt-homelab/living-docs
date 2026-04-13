@@ -1,17 +1,29 @@
 name: Sync Documentation
 
+# Automated documentation sync from Corvus operational governance platform.
+# 
+# Triggers:
+# - Scheduled: Every 6 hours (heartbeat sync)
+# - Repository Dispatch: Event-driven (immediate sync on change.completed, incident.resolved)
+# - Manual: workflow_dispatch for on-demand sync
+
 on:
   schedule:
-    - cron: '0 */6 * * *' # Every 6 hours
+    - cron: '0 */6 * * *' # Every 6 hours at minute 0
   repository_dispatch:
     types: [sync-docs]
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch: # Allow manual trigger via GitHub UI
 
 jobs:
   sync:
+    name: Sync Documentation from Corvus
     runs-on: [self-hosted, dockp04]
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout living-docs
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Need history to detect changes
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -19,21 +31,34 @@ jobs:
           python-version: '3.11'
           
       - name: Install dependencies
-        run: pip install httpx
-        
-      - name: Run Sync
+        run: |
+          python -m pip install --upgrade pip
+          pip install httpx
+          
+      - name: Run Corvus sync
         env:
+          CORVUS_URL: http://localhost:9420
           CORVUS_API_KEY: ${{ secrets.CORVUS_API_KEY }}
         run: python scripts/fetch_and_sync.py
         
-      - name: Commit and Push changes
+      - name: Detect changes
+        id: changes
         run: |
           git config user.name "Claude Sync Bot"
           git config user.email "claude-sync-bot@tmt-homelab.local"
           git add .
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No documentation changes to commit"
           else
-            git commit -m "docs: automated sync from Corvus [skip ci]"
-            git push origin main
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Documentation changes detected"
           fi
+      
+      - name: Commit and push
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git commit -m "docs: automated sync from Corvus [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
