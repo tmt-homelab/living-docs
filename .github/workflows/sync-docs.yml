@@ -14,6 +14,11 @@ on:
     types: [sync-docs]
   workflow_dispatch: # Allow manual trigger via GitHub UI
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   sync:
     name: Sync Documentation from Corvus
@@ -33,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install httpx
+          pip install -r requirements.txt
           
       - name: Run Corvus sync
         env:
@@ -62,3 +67,17 @@ jobs:
           git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build MkDocs site
+        if: always()
+        run: |
+          mkdocs build --strict --site-dir _site
+        
+      - name: Upload MkDocs artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
