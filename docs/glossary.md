@@ -23,7 +23,7 @@ Common terms, acronyms, and abbreviations used in the TMT Homelab documentation.
 | **MoE** | Mixture of Experts (AI architecture) |
 | **NVMe** | Fast SSD interface |
 | **Ollama** | Local LLM runtime |
-| **OpenBao** | Secrets management (Vault fork) |
+| **1Password Connect** | Secrets management for Docker containers |
 | **PERC** | Dell RAID controller |
 | **Prefect** | Workflow orchestration |
 | **PowerDNS** | DNS server software |

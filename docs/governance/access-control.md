@@ -44,13 +44,12 @@ User → Authentik (SSO) → OAuth token → Service validates token → Access 
 ### GitLab/GitHub
 
 - **Authentication**: Personal access tokens (PAT)
-- **Storage**: macOS Keychain (personal), OpenBao (automation)
+- **Storage**: macOS Keychain (personal), 1Password Connect (automation)
 
-### OpenBao
+### 1Password Connect
 
-- **Admin**: Root token (1Password, break-glass only)
-- **AppRole**: Service credentials (auto-generated)
-- **UserPass**: Interactive admin access
+- **Admin**: API token (1Password, break-glass only)
+- **Service Accounts**: Auto-generated via Admin API
 
 ### Kubernetes (if applicable)
 
@@ -79,7 +78,7 @@ User → Authentik (SSO) → OAuth token → Service validates token → Access 
 ### Access Logs Location
 
 - **Authentik**: `index=authentik` in Splunk
-- **OpenBao**: `index=security` in Splunk
+- **1Password Connect**: `index=security` in Splunk
 - **GitLab**: `index=gitlab` in Splunk
 
 ### Common Queries

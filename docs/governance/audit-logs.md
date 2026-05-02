@@ -16,7 +16,7 @@ Audit logs provide tamper-evident records of all security-relevant events:
 | Source | Index | Retention |
 |--------|-------|-----------|
 | Authentik | `authentik` | 90 days |
-| OpenBao | `security` | 90 days |
+| 1Password Connect | `security` | 90 days |
 | GitLab/GitHub | `gitlab` | 90 days |
 | Docker | `docker` | 30 days |
 | Admin API | `admin` | 90 days |

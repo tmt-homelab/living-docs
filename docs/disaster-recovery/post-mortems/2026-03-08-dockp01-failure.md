@@ -132,7 +132,7 @@ zpool status
 ### Phase 2: Secrets Recovery (In Progress)
 
 - [ ] Deploy 1Password Connect on dockp01
-- [ ] Restore secrets from 1Password Connect to OpenBao
+- [x] Restore secrets from 1Password Connect (OpenBao no longer used)
 - [ ] Regenerate all service API keys
 - [ ] Reconfigure Authentik providers
 - [ ] Restore GitLab CI/CD variables

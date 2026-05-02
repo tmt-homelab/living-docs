@@ -87,7 +87,7 @@ graph TB
 | **Media** | Plex, Sonarr, Radarr, Overseerr, Tautulli |
 | **Monitoring** | Netdata, Uptime Kuma, Splunk |
 | **Automation** | Prefect, Admin API, GitHub Actions |
-| **Secrets** | OpenBao, 1Password Connect |
+| **Secrets** | 1Password Connect |
 | **Home Automation** | Home Assistant, Zigbee2MQTT, MQTT |
 
 ---
