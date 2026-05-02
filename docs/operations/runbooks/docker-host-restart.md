@@ -27,7 +27,7 @@ ssh tmiller@<host> "sudo docker ps --format 'table {{.Names}}\t{{.Status}}' | so
 ssh tmiller@192.168.20.15 "sudo docker ps --filter health=unhealthy"
 ssh tmiller@192.168.20.16 "sudo docker ps --filter health=unhealthy"
 ssh tmiller@192.168.20.17 "sudo docker ps --filter health=unhealthy"
-ssh tmiller@192.168.20.14 "sudo docker ps --filter health=unhealthy"
+ssh tmiller@192.168.20.18 "sudo docker ps --filter health=unhealthy"
 ```
 
 **Expected**: No unhealthy containers

@@ -27,7 +27,7 @@ sudo docker inspect <container> --format '{{json .NetworkSettings.Networks}}' | 
 ```bash
 # From Docker host
 ping -c 3 192.168.20.15  # dockp01
-ping -c 3 192.168.20.14  # dockp04
+ping -c 3 192.168.20.18  # dockp04
 
 # From container
 sudo docker exec <container> ping -c 3 <target_host>

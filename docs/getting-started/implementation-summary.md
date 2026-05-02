@@ -11,7 +11,7 @@
 
 | Component | Status | Location |
 |-----------|--------|----------|
-| **MkDocs Site** | ✅ Running | `http://192.168.20.14:8000` |
+| **MkDocs Site** | ✅ Running | `http://192.168.20.18:8000` |
 | **Git Repository** | ✅ Created | `~/Documents/Claude/repos/homelab-docs/` |
 | **Docker Container** | ✅ Deployed | dockp04, `homelab-docs` |
 | **GitHub Remote** | ⏳ Pending | Create repo at github.com/tmttodd/homelab-docs |
@@ -60,7 +60,7 @@
 
 2. **Add Caddy route** — Make docs accessible at `docs.themillertribe-int.org`
    - Edit `repos/homelab-gitops/stacks/core/Caddyfile`
-   - Add route for `docs.themillertribe-int.org` → `192.168.20.14:8000`
+   - Add route for `docs.themillertribe-int.org` → `192.168.20.18:8000`
 
 3. **Write recovery procedures** — Step-by-step rebuild guides
    - dockp01 rebuild procedure
@@ -94,7 +94,7 @@
 
 ### Internal Access (Current)
 ```
-http://192.168.20.14:8000
+http://192.168.20.18:8000
 ```
 
 ### Future External Access (After Caddy config)

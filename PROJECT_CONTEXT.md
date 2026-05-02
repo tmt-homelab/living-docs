@@ -127,7 +127,7 @@ Current config already proxies correctly:
 docs.themillertribe-int.org {
     import internal_tls
     reverse_proxy {
-        dynamic a 192.168.20.14 8000 {
+        dynamic a 192.168.20.18 8000 {
             refresh 30s
             versions ipv4
         }

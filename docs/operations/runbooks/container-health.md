@@ -18,7 +18,7 @@ ssh tmiller@192.168.20.15 "sudo docker ps --format 'table {{.Names}}\t{{.Status}
 ssh tmiller@192.168.20.16 "sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Health}}' | sort"
 
 # dockp04 (Infrastructure)
-ssh tmiller@192.168.20.14 "sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Health}}' | sort"
+ssh tmiller@192.168.20.18 "sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Health}}' | sort"
 ```
 
 ### Expected Output
@@ -53,7 +53,7 @@ done
 # Top 10 CPU consumers
 ssh tmiller@192.168.20.15 "sudo docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}' | sort -t'%' -k2 -rn | head -11"
 ssh tmiller@192.168.20.16 "sudo docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}' | sort -t'%' -k2 -rn | head -11"
-ssh tmiller@192.168.20.14 "sudo docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}' | sort -t'%' -k2 -rn | head -11"
+ssh tmiller@192.168.20.18 "sudo docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}' | sort -t'%' -k2 -rn | head -11"
 
 # Top 10 Memory consumers
 ssh tmiller@192.168.20.15 "sudo docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}' | sort -h -rn | head -11"
