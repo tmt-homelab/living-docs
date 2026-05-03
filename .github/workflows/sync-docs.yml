@@ -42,7 +42,15 @@ jobs:
       - name: Run Corvus sync
         env:
           CORVUS_URL: http://localhost:9420
+          # Legacy fallback (dual-mode). Removed in Phase 5.
           CORVUS_API_KEY: ${{ secrets.CORVUS_API_KEY }}
+          # Phase 4a — Hydra OIDC. fetch_and_sync.py prefers these over the
+          # legacy CORVUS_API_KEY when both are set. Sourced from repo
+          # secrets HYDRA_CLIENT_ID / HYDRA_CLIENT_SECRET (set out-of-band
+          # from the 1P item services/homelab-hydra-client-sync-docs).
+          HYDRA_CLIENT_ID: ${{ secrets.HYDRA_CLIENT_ID }}
+          HYDRA_CLIENT_SECRET: ${{ secrets.HYDRA_CLIENT_SECRET }}
+          HYDRA_SCOPE: corvus.read
         run: python scripts/fetch_and_sync.py
         
       - name: Detect source changes
